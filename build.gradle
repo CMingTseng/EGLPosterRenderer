@@ -1,0 +1,329 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+        flatDir {
+            dirs 'libs'
+        }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.2'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath "gradle.plugin.com.gladed.gradle.androidgitversion:gradle-android-git-version:0.3.3"
+        //https://developers.google.com/android/guides/google-services-plugin
+//        classpath 'com.google.gms:google-services:3.0.0'
+//        classpath 'com.google.firebase:firebase-plugins:1.0.5'
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        maven { url "https://jitpack.io" }
+        flatDir {
+            dirs 'libs'
+        }
+    }
+}
+
+def getVersionNameSuffixDebug = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--tags', '--long', '--always'
+            standardOutput = stdout
+        }
+        def describe = stdout.toString().trim().split("-")
+        return '-' + describe[1] + '-' + describe[2]
+    }
+    catch (ignored) {
+        return "unspecified";
+    }
+}
+
+def getTaglist = { ->
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'tag', '--list'
+            standardOutput = code
+        }
+        return code.toString().trim()
+    }
+    catch (ignored) {
+        return null;
+    }
+}
+
+//http://stackoverflow.com/questions/8595391/how-to-show-git-commit-using-number-of-commits-since-a-tag
+def getVersionCodeByTagCommitCount = { ->//FIXME
+    try {
+//        println "getVersionCodeByTagCommitCount"
+//        println "----"
+        def listarray = getTaglist().split("\n")
+        def listsize = listarray.size();
+//        println listarray.size()
+//        println "----"
+//        for (int i=0;i<listarray.size();++i){
+//            println listarray[i]
+//            println "-A--"
+//        }
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', listarray[listsize - 1], '--count'
+            // FIXME need select which tag like:  commandLine 'git', 'rev-list', '0.0.1', '--count'
+            standardOutput = code
+        }
+//        println "-A--"
+//        println code.toString()
+        return Integer.valueOf(code);
+    }
+    catch (ignored) {
+        return -1;
+    }
+}
+
+def getRemoteBranchlist = { -> //FIXME branch list list by name not by !!!??
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'branch', '-r'
+            standardOutput = code
+        }
+        return code.toString().trim()
+    }
+    catch (ignored) {
+        return null;
+    }
+}
+
+def getVersionCodeByOriginMasterCommitCount = { ->//FIXME
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', 'origin', '--count'
+            standardOutput = code
+        }
+        return Integer.valueOf(code);
+    }
+    catch (ignored) {
+        return -1;
+    }
+}
+
+def getVersionCodeByOriginReleaseCommitCount = { ->//FIXME
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', 'origin/release', '--count'
+            standardOutput = code
+        }
+        return Integer.valueOf(code);
+    }
+    catch (ignored) {
+        return -1;
+    }
+}
+
+def getVersionCodeByThisLocalHEADCommitCount = { ->//FIXME
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', '--count', 'HEAD'
+            standardOutput = code
+        }
+        return Integer.valueOf(code);
+    }
+    catch (ignored) {
+        return -1;
+    }
+}
+
+def getVersionCodeByRemoteHEADCommitCount = { ->
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', '--count', 'origin/HEAD'
+            standardOutput = code
+        }
+        return Integer.valueOf(code);
+    }
+    catch (ignored) {
+        return -1;
+    }
+}
+
+
+def getVersionCode = { ->
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'tag', '--list'
+            standardOutput = code
+        }
+        return code.toString().split("\n").size()
+    }
+    catch (ignored) {
+        return -1;
+    }
+}
+
+def getVersionName = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--tags', '--long'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    }
+    catch (ignored) {
+        return null;
+    }
+}
+
+def getBranchName = { ->
+    println "getBranchName"
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+//            commandLine 'git', 'branch', '--column'
+//            commandLine 'git', 'branch'
+            commandLine 'git', 'status'
+            standardOutput = code
+        }
+//        println code.toString().split("Your")[0].replace("On branch ", "");
+//        println "----"
+        return code.toString().split("Your")[0].replace("On branch ", "").trim()
+    }
+    catch (ignored) {
+        return -1;
+    }
+}
+
+def getGitTagId = { ->
+    def formatuic = getVersionName().split("-")
+    return formatuic[0];
+}
+
+def getGitCommitCount = { ->
+    def formatuic = getVersionName().split("-")
+    return formatuic[1];
+//    return Integer.valueOf(formatuic[1]);
+}
+
+def getGitSHA1Hash = { ->
+    try {
+        def sha1hash = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'show', '--format="%h"', '--abbrev=4', '-q'
+            standardOutput = sha1hash
+        }
+        return Integer.valueOf(sha1hash.toString().trim(), 16);
+    }
+    catch (ignored) {
+        return 0
+    }
+}
+
+def getGitCommitSHA1Hash = { ->
+    def formatuic = getVersionName().split("-")
+    return formatuic[2];
+}
+
+def getReformatVersionName = { ->
+    def formatuic = getVersionName().split("-")
+    def ori = "%s.%05d-Neo"
+//    def outs = String.format(ori, formatuic[0], Integer.parseInt(formatuic[1]));
+    def outs = String.format(ori, formatuic[0], getGitSHA1Hash());
+    return outs;
+}
+
+def getCheckedOutGitCommitHash() {
+    def gitFolder = "$projectDir/.git/"
+    def takeFromHash = 12
+    /*
+     * '.git/HEAD' contains either
+     *      in case of detached head: the currently checked out commit hash
+     *      otherwise: a reference to a file containing the current commit hash
+     */
+    def head = new File(gitFolder + "HEAD").text.split(":") // .git/HEAD
+    def isCommit = head.length == 1 // e5a7c79edabbf7dd39888442df081b1c9d8e88fd
+    // def isRef = head.length > 1     // ref: refs/heads/master
+
+    if (isCommit) return head[0].trim().take(takeFromHash) // e5a7c79edabb
+
+    def refHead = new File(gitFolder + head[1].trim()) // .git/refs/heads/master
+    refHead.text.trim().take takeFromHash
+}
+
+def getAuthorName = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'config', '--global', '--get', 'user.name'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    }
+    catch (ignored) {
+        return "";
+    }
+}
+
+def getAuthorEmail = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'config', '--global', '--get', 'user.email'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    }
+    catch (ignored) {
+        return "";
+    }
+}
+
+//def buildTime() {
+//    def df = new SimpleDateFormat("yyyy_MMdd_HHmm")
+//    df.setTimeZone(TimeZone.getDefault())
+//    return df.format(new Date())
+//}
+//    def formattedDate = date.format('yyyyMMddhhmm')
+
+def buildTime() {
+    return new Date().format("yyyyMMdd", TimeZone.getTimeZone("UTC"))
+}
+
+ext {
+//    compileSdkVersion = 'Google Apis:Google Apis:23'
+    compileSdkVersion = 25
+    buildToolsVersion = '25.0.3'
+    supportLibVersion = '25.3.1'
+    runnerVersion = '0.5'
+    rulesVersion = '0.5'
+    UiAutomatorLibVersion = '2.1.2'
+    FirebaseLibVersion = '10.2.1'
+    versionCode = getVersionCodeByThisLocalHEADCommitCount()
+    versionName = getGitTagId() + "." + getGitCommitCount()
+    appbuildTime = buildTime()
+    authorName = getAuthorName()
+    authorEmail = getAuthorEmail()
+    bracnch = getBranchName()
+    pomUtilsGroupId = 'com.wanghong'
+    pomUtilsArtifactId = 'egpposterrenderer'
+// project homepage
+    scmUrl = 'https://github.com/WanghongLin'
+// project git
+    scmConnectionUrl = 'https://github.com/WanghongLin/EGLPoster'
+// project git
+    scmDeveloperConnectionUrl = 'git+https://github.com/WanghongLin/EGLPoster.git'
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

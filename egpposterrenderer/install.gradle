@@ -1,0 +1,65 @@
+apply plugin: 'com.github.dcendents.android-maven'
+group = rootProject.ext.pomUtilsGroupId                           // Maven Group ID for the artifact
+
+install {
+    repositories.mavenInstaller {
+        // This generates POM. xml  with proper parameters
+        pom {
+            version rootProject.ext.versionName
+            groupId = rootProject.ext.pomUtilsGroupId
+            artifactId = rootProject.ext.pomUtilsArtifactId
+            project {
+                inceptionYear '2017'
+                packaging 'aar'
+                name 'egpposterrenderer'
+                description 'EGLPosterRenderer Library'
+                url rootProject.ext.scmUrl
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'Neo'
+                        name 'Neo'
+                        email 'c.min.tseng@gmail.com'
+                    }
+                }
+                scm {
+                    connection rootProject.ext.scmConnectionUrl
+                    developerConnection rootProject.ext.scmConnectionUrl
+                    url rootProject.ext.scmUrl
+                }
+            }
+        }
+    }
+}
+
+//FIXME
+//https://github.com/Palatis/EsptouchForAndroid/blob/master/library/esptouch-android/build.gradle
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "file:///${rootProject.rootDir}/maven-repository")
+            pom.project {
+                version rootProject.ext.versionName
+                groupId = rootProject.ext.pomUtilsGroupId
+                artifactId = rootProject.ext.pomUtilsArtifactId
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+//                      url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+                scm {
+                    url rootProject.ext.scmUrl
+                    connection rootProject.ext.scmConnectionUrl
+                    developerConnection rootProject.ext.scmDeveloperConnectionUrl
+                }
+            }
+        }
+    }
+}
